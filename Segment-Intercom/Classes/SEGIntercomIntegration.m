@@ -137,7 +137,7 @@
 
 - (void)reset
 {
-    [self.intercom reset];
+    [self.intercom logout];
     SEGLog(@" [Intercom logout];");
 }
 
