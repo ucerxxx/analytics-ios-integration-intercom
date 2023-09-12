@@ -55,17 +55,25 @@
     if (payload.userId) {
         ICMUserAttributes *attributes = [ICMUserAttributes new];
         attributes.userId = payload.userId;
-        [self.intercom loginUserWithUserAttributes:attributes success:nil failure:nil];
+        checkAndRunOnMainQueue(^{
+            [self.intercom loginUserWithUserAttributes:attributes success:nil failure:nil];
+        });
+        
         SEGLog(@"[Intercom registerUserWithUserId:%@];", payload.userId);
     } else if (payload.anonymousId) {
-        [self.intercom loginUnidentifiedUserWithSuccess:nil failure:nil];
+        checkAndRunOnMainQueue(^{
+            [self.intercom loginUnidentifiedUserWithSuccess:nil failure:nil];
+        });
+        
         SEGLog(@"[Intercom registerUnidentifiedUser];");
     }
 
     NSDictionary *integration = [payload.integrations valueForKey:@"intercom"];
     if (integration[@"user_hash"]) {
         NSString *userHash = integration[@"user_hash"];
-        [self.intercom setUserHash:userHash];
+        checkAndRunOnMainQueue(^{
+            [self.intercom setUserHash:userHash];
+        });
     }
 
     if ([payload.traits count] == 0) {
@@ -79,7 +87,7 @@
 {
     //'customAttributes' must be a non empty NSDictionary
     if ([payload.properties count] == 0) {
-        dispatch_sync(dispatch_get_main_queue(), ^{
+        checkAndRunOnMainQueue(^{
             [self.intercom logEventWithName:payload.event];
         });
         SEGLog(@"[Intercom logEventWithName:%@];", payload.event);
@@ -116,7 +124,7 @@
         }
     }];
 
-    dispatch_sync(dispatch_get_main_queue(), ^{
+    checkAndRunOnMainQueue(^{
         [self.intercom logEventWithName:payload.event metaData:output];
     });
     
@@ -136,13 +144,17 @@
     ICMUserAttributes *userAttributes = [ICMUserAttributes new];
     userAttributes.companies = @[ company ];
 
-    [self.intercom updateUser:userAttributes success:nil failure:nil];
+    checkAndRunOnMainQueue(^{
+        [self.intercom updateUser:userAttributes success:nil failure:nil];
+    });
     SEGLog(@"[Intercom updateUser:%@];", userAttributes);
 }
 
 - (void)reset
 {
-    [self.intercom logout];
+    checkAndRunOnMainQueue(^{
+        [self.intercom logout];
+    });
     SEGLog(@" [Intercom logout];");
 }
 
@@ -210,7 +222,9 @@
     }
 
     userAttributes.customAttributes = customAttributes;
-    [self.intercom updateUser:userAttributes success:nil failure:nil];
+    checkAndRunOnMainQueue(^{
+        [self.intercom updateUser:userAttributes success:nil failure:nil];
+    });
     SEGLog(@"[Intercom updateUser:%@];", userAttributes);
 }
 
@@ -251,6 +265,15 @@
     company.customAttributes = customAttributes;
 
     return company;
+}
+
+void checkAndRunOnMainQueue(void (^block)(void))
+{
+    if ([NSThread isMainThread]) {
+        block();
+    } else {
+        dispatch_sync(dispatch_get_main_queue(), block);
+    }
 }
 
 @end
