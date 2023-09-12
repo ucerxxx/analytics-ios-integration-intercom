@@ -79,7 +79,9 @@
 {
     //'customAttributes' must be a non empty NSDictionary
     if ([payload.properties count] == 0) {
-        [self.intercom logEventWithName:payload.event];
+        dispatch_sync(dispatch_get_main_queue(), ^{
+            [self.intercom logEventWithName:payload.event];
+        });
         SEGLog(@"[Intercom logEventWithName:%@];", payload.event);
         return;
     }
@@ -114,7 +116,10 @@
         }
     }];
 
-    [self.intercom logEventWithName:payload.event metaData:output];
+    dispatch_sync(dispatch_get_main_queue(), ^{
+        [self.intercom logEventWithName:payload.event metaData:output];
+    });
+    
     SEGLog(@"[Intercom logEventWithName:%@ metaData:%@];", payload.event, output);
 }
 
